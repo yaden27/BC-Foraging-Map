@@ -1,0 +1,11 @@
+const assert=require('node:assert/strict');const {classify,distanceSq}=require('../map/trail-utils.js');
+assert.equal(classify({}).level,null);assert.equal(classify({}).label,'');assert.equal(classify({'mtb:scale':'0'}).level,null);assert.equal(classify({sac_scale:'not_a_grade'}).label,'');
+assert.equal(classify({sac_scale:'hiking'}).warn,false);assert.equal(classify({sac_scale:'mountain_hiking'}).warn,false);
+for(const sac_scale of ['demanding_mountain_hiking','alpine_hiking','demanding_alpine_hiking','difficult_alpine_hiking'])assert.equal(classify({sac_scale}).warn,true);
+assert.equal(classify({access:'private'}).restricted,true);assert.equal(classify({access:'private',foot:'yes'}).restricted,false);assert.equal(classify({foot:'no',sac_scale:'hiking'}).restricted,true);
+assert.equal(distanceSq({x:3,y:4},{x:0,y:0},{x:6,y:0}),16);assert.equal(distanceSq({x:9,y:0},{x:0,y:0},{x:6,y:0}),9);
+console.log('PASS: unrated routes remain unlabelled; cycling grades are not hiking grades; T3–T6 and access restrictions warn; hit tests use nearest segment.');
+const {clipSegment,groupTrails}=require('../map/trail-utils.js');const rect={left:0,top:0,right:10,bottom:10};
+assert.deepEqual(clipSegment({x:-5,y:5},{x:15,y:5},rect),[{x:0,y:5},{x:10,y:5}]);assert.equal(clipSegment({x:-5,y:-5},{x:15,y:-5},rect),null);
+const groups=groupTrails([{id:1,source:'osm',tags:{name:'Example Trail',sac_scale:'hiking'}},{id:2,source:'bc',tags:{name:' example trail ',sac_scale:'demanding_mountain_hiking'}},{id:3,source:'osm',tags:{}},{id:4,source:'bc',tags:{}},{id:5,source:'osm',tags:{name:'Outside'}}],w=>w.id===5?null:{lat:49,lng:-123});assert.equal(groups.length,3);const named=groups.find(g=>g.ways.length===2);assert.equal(named.grade.level,3);assert.equal(named.sources.size,2);assert.equal(groups.filter(g=>g.grade.level===null).length,2);
+console.log('PASS: viewport-crossing segments count; outside segments do not; same-name routes merge across sources; unnamed records stay separate; strongest known grade is retained.');
